@@ -6,7 +6,7 @@ using namespace std;
 
 
 
-void thomasldpack::thomas_procedure_1(unsigned long long N, const long double l[], long double d[], const long double u[]) {
+void thomasldpack::thomas_procedure_1(int N, const long double l[], long double d[], const long double u[]) {
     //-------------------------------------------------------------------
     //  Procedura operująca na macierzy A (trójdiagonalnej).
     //  W rzeczwywistości operacyjnej mamy 3 oddzielne tablice l,d,u
@@ -22,15 +22,15 @@ void thomasldpack::thomas_procedure_1(unsigned long long N, const long double l[
     //  Zwraca: Nic -> operuje na wskaźnikach
     //-------------------------------------------------------------------
     
-    for (unsigned long long i = 1ULL; i < N; i++) {
-        long double m = l[i] / d[i - 1ULL];
-        d[i] = d[i] - m * u[i - 1ULL];
+    for (int i = 1; i < N; i++) {
+        long double m = l[i] / d[i - 1];
+        d[i] = d[i] - m * u[i - 1];
     }
 }
 
 
 
-void thomasldpack::thomas_procedure_2(unsigned long long N, const long double l[], const long double u[], 
+void thomasldpack::thomas_procedure_2(int N, const long double l[], const long double u[], 
         const long double d[], long double b[], long double x[]) {
     //-------------------------------------------------------------------
     // Procedura operująca na wektorze b.
@@ -53,21 +53,21 @@ void thomasldpack::thomas_procedure_2(unsigned long long N, const long double l[
     
     // Eliminacja w przód dla wektora b; 
     // modyfikujemy tablicę b "w miejscu" - bez alokowania nowej tablicy
-    for (unsigned long long i = 1ULL; i < N; i++) {
-        long double m = l[i] / d[i - 1ULL];
-        b[i] = b[i] - m * b[i - 1ULL];
+    for (int i = 1; i < N; i++) {
+        long double m = l[i] / d[i - 1];
+        b[i] = b[i] - m * b[i - 1];
     }
 
     // Podstawianie wsteczne
-    x[N - 1ULL] = b[N - 1ULL] / d[N - 1ULL];
-    for (int i = N - 2ULL; i >= 0ULL; i--) {
-        x[i] = (b[i] - u[i] * x[i + 1ULL]) / d[i];
+    x[N - 1] = b[N - 1] / d[N - 1];
+    for (int i = N - 2; i >= 0; i--) {
+        x[i] = (b[i] - u[i] * x[i + 1]) / d[i];
     }
 }
 
 
 
-void thomasldpack::Thomas(unsigned long long N, const long double l[], long double d[], const long double u[],
+void thomasldpack::Thomas(int N, const long double l[], long double d[], const long double u[],
         long double b[], long double x[]) {
     //-------------------------------------------------------------------
     // Główna funkcja rozwiązująca układ Ax = b dla macierzy trójdiagonalnej
