@@ -1,0 +1,4 @@
+- W pakiecie CALERF używanie register int jest przestarzałe. Od standardu C++17 kompilatory samodzielnie decydują o pamięci, do której przydzielają zasoby.
+- pomimo teoretycznego wyświetlania możliwości błędu w linii:
+	static const long double XMAX   =  0.5e2466L;
+  kod kompiluje się i wykonuje poprawnie

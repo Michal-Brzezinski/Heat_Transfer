@@ -4,6 +4,19 @@
 #include <fstream>
 #include <utility> // dla std::swap
 
+//  Pakiet udostęniony przez prowadzącego
+#include "CALERF.h" 
+
+
+/*  
+    Komenda do kompilacji kodu: 
+    g++ main.cpp calerf.cpp -o main -lstdc++  
+
+    Komenda wykonująca program:
+    ./main
+*/
+
+
 //----------------------------------------------------------------------
 // Stałe fizyczne i przestrzenne
 //----------------------------------------------------------------------
@@ -40,6 +53,12 @@ void warunek_poczatkowy(long double* U, const long double* X) {
     // Warunek początkowy U(x,0):
     // Funkcja inicjalizuje wartości dla tablicy U na odpowiednie 
     // biorąc pod uwagę podany warunek początkowy
+
+    //  Argumenty:
+    //  U - tablica, w której zapisywane będą wartości początkowe
+    //  X - tablica przechowująca wartości węzłów przestrzennych
+
+    //  Zwraca: Nic
     //-------------------------------------------------------------------
 
     for (unsigned long long i = 0ULL; i < N; ++i) {
@@ -48,23 +67,50 @@ void warunek_poczatkowy(long double* U, const long double* X) {
 }
 
 
-long double analytic_solution(long double x, long double t) {
+long double rozwiazanie_analityczne(long double x, long double t) {
     //-------------------------------------------------------------------
-    // Rozwiązanie analityczne U(x,t)
+    // Rozwiązanie analityczne równania dyfuzji:
+    // znalezienie wartości U(x,t) dla podanych argumentów
+    
+    //  Argumenty:
+    //  x - zmienna przestrzenna
+    //  t - zmienna czasu
+
+    //  Zwraca: Wartość long double obliczonego analitycznie rozwiązania 
+    //          dla podanego w treści zadania wzoru
     //-------------------------------------------------------------------
 
-    long double z = (2.0L * D * t / b - x) / (2.0L * std::sqrtl(D * t));
-    long double pref = 0.5L * std::expl(D * t / (b * b) - x / b);
-    return pref * std::erfcl(z);
+    long double z       = (2.0L * D * t / b - x) / (2.0L * std::sqrtl(D * t));
+
+    long double pref    = 0.5L * std::expl(D * t / (b * b) - x / b);
+    
+    return pref * calerfpack::erfc_LD(z);
+    //  używana jest funkcja z pakietu CALERF, udostępnionego przez prowadzącego
 }
 
-// Jawna metoda KMB
-void explicit_step(const long double* U_old, long double* U_new, long double lambda) {
+
+
+void oblicz_nastepny_poziom_czasowy_KMB(const long double* U_old, long double* U_new, long double lambda) {
+
+    //-------------------------------------------------------------------
+    // Funkcja oblicza przybliżoną wartość funkcji na kolejnym poziomie czasowym
     // Warunki brzegowe: U_new[0]=U_new[N-1]=0 (przyjmujemy, że już są ustawione)
+    
+    //  Argumenty:
+    //  U_old - Tablica wartości funkcji dla bieżącego poziomu czasu
+    //  U_new - Tablica wartości funkcji dla nowego poziomu czasu
+    //  lambda - parametr lambda: D*dt/h^2
+
+    //  Zwraca: Nic
+    //-------------------------------------------------------------------
+
     for (unsigned long long i = 1; i + 1 < N; ++i) {
         U_new[i] = U_old[i] + lambda * (U_old[i + 1] - 2.0L * U_old[i] + U_old[i - 1]);
+        //  Jest to przekształcony wzór KMB
     }
 }
+
+
 
 // Algorytm Thomasa dla macierzy trójdiagonalnej
 void thomas(const long double* aa, const long double* bb, const long double* cc,
@@ -123,7 +169,7 @@ void laasonen_step(const long double* U_old, long double* U_new, long double lam
 long double compute_max_error(const long double* U_num, const long double* X, long double t) {
     long double max_err = 0.0L;
     for (unsigned long long i = 0; i < N; ++i) {
-        long double ue = analytic_solution(X[i], t);
+        long double ue = rozwiazanie_analityczne(X[i], t);
         long double e = std::fabsl(U_num[i] - ue);
         if (e > max_err) {
             max_err = e;
@@ -163,7 +209,7 @@ int main() {
     // Pętla czasowa
     for (unsigned long long n = 0ULL; n < M; ++n) {
         // Metoda KMB
-        explicit_step(Ue, Tmp, lambda);
+        oblicz_nastepny_poziom_czasowy_KMB(Ue, Tmp, lambda);
         // Zamiana wskaźników, aby uniknąć kopiowania tablic – teraz Ue wskazuje na wynik nowej iteracji
         std::swap(Ue, Tmp);
         
@@ -182,7 +228,7 @@ int main() {
     std::ofstream fout("results.csv");
     fout << "x,U_explicit,U_laasonen,U_exact\n";
     for (unsigned long long i = 0; i < N; ++i) {
-        long double ue_x = analytic_solution(X[i], t_max);
+        long double ue_x = rozwiazanie_analityczne(X[i], t_max);
         fout << X[i] << "," << Ue[i] << "," << Ul[i] << "," << ue_x << "\n";
     }
     fout.close();
