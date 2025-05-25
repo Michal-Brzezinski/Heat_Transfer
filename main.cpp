@@ -92,7 +92,6 @@ long double rozwiazanie_analityczne(long double x, long double t) {
 
 
 void oblicz_nastepny_poziom_czasowy_KMB(const long double* U_old, long double* U_new, long double lambda) {
-
     //-------------------------------------------------------------------
     // Funkcja oblicza przybliżoną wartość funkcji na kolejnym poziomie czasowym
     // Warunki brzegowe: U_new[0]=U_new[N-1]=0 (przyjmujemy, że już są ustawione)
@@ -102,7 +101,7 @@ void oblicz_nastepny_poziom_czasowy_KMB(const long double* U_old, long double* U
     //  U_new - Tablica wartości funkcji dla nowego poziomu czasu
     //  lambda - parametr lambda: D*dt/h^2
 
-    //  Zwraca: Nic
+    //  Zwraca: Nic -> operacje na wskaźnikach
     //-------------------------------------------------------------------
 
     for (int i = 1; i + 1 < N; ++i) {
@@ -112,21 +111,47 @@ void oblicz_nastepny_poziom_czasowy_KMB(const long double* U_old, long double* U
 }
 
 
-void laasonen_step(const long double* U_old, long double* U_new, long double lambda) {
+void oblicz_nastepny_poziom_czasowy_Laasonen(const long double* U_old, long double* U_new, long double lambda) {
+    //-------------------------------------------------------------------
+    //  Funkcja oblicza przybliżoną wartość funkcji na kolejnym poziomie czasowym
+    //  Oblicza układ równań z macierzą trójdiagonalną za pomocą:
+    //      a) Algorytmu Thomasa
+    //      b) Algorytmu dekompozycji LU dla macierzy pełnej
+    //  Warunki brzegowe: U_new[0]=U_new[N-1]=0 (ustawiane na początku pętli for)
+    
+    //  Argumenty:
+    //      U_old   - Tablica wartości funkcji dla bieżącego poziomu czasu
+    //      U_new   - Tablica wartości funkcji dla nowego poziomu czasu
+    //      lambda  - parametr lambda: D*dt/h^2
+
+    //  Zwraca: Nic -> operacje na wskaźnikach
+    //-------------------------------------------------------------------
+    
     // Alokacja tablic na współczynniki układu trójdiagonalnego
     long double* l = new long double[N]; // dolna przekątna
     long double* d = new long double[N]; // główna przekątna
     long double* u = new long double[N]; // górna przekątna
     long double* c = new long double[N]; // wyrazy wolne
     
-    for (unsigned long long i = 0; i < N; ++i) {
+
+    for (int i = 0; i < N; ++i) {
+        // Uzupełnienie macierzy A (a właściwie jej diagonali) odpowiednimi wyrazami
+
         if (i == 0 || i + 1 == N) {
-            // Warunki brzegowe: U = 0 na brzegach
+            //  Warunki brzegowe: U = 0 na brzegach(pierwszy i ostatni węzeł)
+            //  Poniższe przekształcenie wynika bezpośrednio z postaci 
+            //  macierzy A w metodzie Laasonen, gdzie 1. i ostatni wiersz
+            //  odpowiadają za wartości funkcji na brzegach
+
             l[i] = 0.0L;
             d[i] = 1.0L;
             u[i] = 0.0L;
             c[i] = 0.0L;
+
         } else {
+            //  Pozostałe wyrazy macierzy A są tutaj obliczane.
+            //  Poniższe wynika z przekształcenia równania w metodzie Laasonen
+            
             l[i] = -lambda;
             d[i] = 1.0L + 2.0L * lambda;
             u[i] = -lambda;
@@ -142,12 +167,26 @@ void laasonen_step(const long double* U_old, long double* U_new, long double lam
     delete[] d;
     delete[] u;
     delete[] c;
+    //  Zwolnienie zbędnych zasobów
 }
 
-// Maksymalny błąd między rozwiązaniem numerycznym a analitycznym w danym czasie t
+
 long double compute_max_error(const long double* U_num, const long double* X, long double t) {
+    //-------------------------------------------------------------------
+    //  Funkcja oblicza maksymalny błąd między rozwiązaniem numerycznym a analitycznym w danym czasie t
+    //
+    //  Argumenty:
+    //      U_num   - Tablica przybliżonych wartości funkcji dla danego poziomu czasu
+    //      X       - Tablica węzłów (siatka przestrzenna)
+    //      t       - zadany poziom czasowy
+    //
+    //  Zwraca:  MAKSYMALNY BŁĄD BEZWZGLĘDNY na danym poziomie czasowym
+    //           pomiędzy obliczonym - przybliżonym rozwiązaniem na danym 
+    //           poziomie czasowym i jego rozwiązaniem analutycznym.
+    //-------------------------------------------------------------------
+
     long double max_err = 0.0L;
-    for (unsigned long long i = 0; i < N; ++i) {
+    for (int i = 0; i < N; ++i) {
         long double ue = rozwiazanie_analityczne(X[i], t);
         long double e = std::fabsl(U_num[i] - ue);
         if (e > max_err) {
@@ -156,6 +195,8 @@ long double compute_max_error(const long double* U_num, const long double* X, lo
     }
     return max_err;
 }
+
+
 
 int main() {
     // Wypisanie wymiarów siatki
@@ -169,7 +210,7 @@ int main() {
     long double* Tmp = new long double[N];  //  tablica przechowująca tymczasowe wartości funkcji
 
     // Utworzenie siatki przestrzennej jako: X[i] = -a + i*h
-    for (unsigned long long i = 0; i < N; ++i) {
+    for (int i = 0; i < N; ++i) {
         X[i] = -a + static_cast<long double>(i) * h;
     }
     
@@ -177,7 +218,7 @@ int main() {
     warunek_poczatkowy(U0, X);
 
     // Kopiujemy U0 do Ue oraz Ul
-    for (unsigned long long i = 0ULL; i < N; ++i) {
+    for (int i = 0; i < N; ++i) {
         Ue[i] = U0[i];
         Ul[i] = U0[i];
     }
@@ -190,14 +231,14 @@ int main() {
     //  Natomiast  w ML (dla lambda bliskiego 1): 144M = N^2
 
     // Pętla czasowa
-    for (unsigned long long n = 0ULL; n < M; ++n) {
+    for (int n = 0; n < M; ++n) {
         // Metoda KMB
         oblicz_nastepny_poziom_czasowy_KMB(Ue, Tmp, lambda);
         // Zamiana wskaźników, aby uniknąć kopiowania tablic – teraz Ue wskazuje na wynik nowej iteracji
         std::swap(Ue, Tmp);
         
-        // Schemat Laasonena (implicit)
-        laasonen_step(Ul, Tmp, lambda);
+        // Metoda pośrednia Laasonen
+        oblicz_nastepny_poziom_czasowy_Laasonen(Ul, Tmp, lambda);
         std::swap(Ul, Tmp);
     }
 
@@ -210,7 +251,7 @@ int main() {
     // Zapis wyników do pliku CSV
     std::ofstream fout("results.csv");
     fout << "x,U_explicit,U_laasonen,U_exact\n";
-    for (unsigned long long i = 0; i < N; ++i) {
+    for (int i = 0; i < N; ++i) {
         long double ue_x = rozwiazanie_analityczne(X[i], t_max);
         fout << X[i] << "," << Ue[i] << "," << Ul[i] << "," << ue_x << "\n";
     }
