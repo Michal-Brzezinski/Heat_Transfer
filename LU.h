@@ -1,5 +1,5 @@
-#ifndef __thomasld_h
-#define __thomasld_h
+#ifndef __lu_h
+#define __lu_h
 
 namespace ludecomposepack{
 
