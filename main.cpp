@@ -6,6 +6,7 @@
 
 //  Pakiet udostęniony przez prowadzącego
 #include "CALERF.h" 
+#include "ThomasLD.h"
 
 
 /*  
@@ -30,16 +31,16 @@ const long double a     = 6.0e0L;
 // Rozmiary siatki
 //----------------------------------------------------------------------
 //  liczba węzłów siatki przestrzennej
-const unsigned long long N = 12000000001ULL;
+const int N = 1200;
 
 //  liczba węzłów siatki czasowej 
-const unsigned long long M = 10000000001ULL;
+const int M = 1000;
 
 //----------------------------------------------------------------------
 // Wartości kroków na siatce czasowo-przestrzennej
 //----------------------------------------------------------------------
-const long double h  = (2*a)/(N-1ULL);     // krok przestrzenny
-const long double dt = t_max/(M-1ULL);     // krok czasowy (krok całkowania)
+const long double h  = (2*a)/(N-1);     // krok przestrzenny
+const long double dt = t_max/(M-1);     // krok czasowy (krok całkowania)
 
 
 
@@ -61,7 +62,7 @@ void warunek_poczatkowy(long double* U, const long double* X) {
     //  Zwraca: Nic
     //-------------------------------------------------------------------
 
-    for (unsigned long long i = 0ULL; i < N; ++i) {
+    for (int i = 0; i < N; ++i) {
         U[i] = (X[i] < 0.0L) ? 0.0L : std::expl(-X[i] / b);
     }
 }
@@ -104,65 +105,43 @@ void oblicz_nastepny_poziom_czasowy_KMB(const long double* U_old, long double* U
     //  Zwraca: Nic
     //-------------------------------------------------------------------
 
-    for (unsigned long long i = 1; i + 1 < N; ++i) {
+    for (int i = 1; i + 1 < N; ++i) {
         U_new[i] = U_old[i] + lambda * (U_old[i + 1] - 2.0L * U_old[i] + U_old[i - 1]);
         //  Jest to przekształcony wzór KMB
     }
 }
 
 
-
-// Algorytm Thomasa dla macierzy trójdiagonalnej
-void thomas(const long double* aa, const long double* bb, const long double* cc,
-            const long double* dd, long double* U) {
-    // Alokujemy tymczasowe tablice dla cp i dp
-    long double* cp = new long double[N];
-    long double* dp = new long double[N];
-    
-    cp[0] = cc[0] / bb[0];
-    dp[0] = dd[0] / bb[0];
-    for (unsigned long long i = 1; i < N; ++i) {
-        long double m = bb[i] - aa[i] * cp[i - 1];
-        cp[i] = ((i + 1 < N) ? cc[i] : 0.0L) / m;
-        dp[i] = (dd[i] - aa[i] * dp[i - 1]) / m;
-    }
-    U[N - 1] = dp[N - 1];
-    for (unsigned long long i = N - 1; i-- > 0;) {
-        U[i] = dp[i] - cp[i] * U[i + 1];
-    }
-    
-    delete[] cp;
-    delete[] dp;
-}
-
-// Schemat Laasonena (BTCS)
 void laasonen_step(const long double* U_old, long double* U_new, long double lambda) {
-    // Alokujemy tablice na współczynniki układu trójdiagonalnego
-    long double* aa = new long double[N];
-    long double* bb = new long double[N];
-    long double* cc = new long double[N];
-    long double* dd = new long double[N];
+    // Alokacja tablic na współczynniki układu trójdiagonalnego
+    long double* l = new long double[N]; // dolna przekątna
+    long double* d = new long double[N]; // główna przekątna
+    long double* u = new long double[N]; // górna przekątna
+    long double* c = new long double[N]; // wyrazy wolne
     
     for (unsigned long long i = 0; i < N; ++i) {
         if (i == 0 || i + 1 == N) {
-            // Dla warunków Dirichleta U=0
-            aa[i] = 0.0L;
-            bb[i] = 1.0L;
-            cc[i] = 0.0L;
-            dd[i] = 0.0L;
+            // Warunki brzegowe: U = 0 na brzegach
+            l[i] = 0.0L;
+            d[i] = 1.0L;
+            u[i] = 0.0L;
+            c[i] = 0.0L;
         } else {
-            aa[i] = -lambda;
-            bb[i] = 1.0L + 2.0L * lambda;
-            cc[i] = -lambda;
-            dd[i] = U_old[i];
+            l[i] = -lambda;
+            d[i] = 1.0L + 2.0L * lambda;
+            u[i] = -lambda;
+            c[i] = U_old[i];
         }
     }
-    thomas(aa, bb, cc, dd, U_new);
     
-    delete[] aa;
-    delete[] bb;
-    delete[] cc;
-    delete[] dd;
+    // Rozwiązujemy układ trójdiagonalny wykorzystując pakiet thomasldpack:
+    // Parametry: N, l, d, u, b (c), x (U_new)
+    thomasldpack::Thomas(N, l, d, u, c, U_new);
+    
+    delete[] l;
+    delete[] d;
+    delete[] u;
+    delete[] c;
 }
 
 // Maksymalny błąd między rozwiązaniem numerycznym a analitycznym w danym czasie t
@@ -183,11 +162,11 @@ int main() {
     std::cout << "N = " << N << ", M = " << M << std::endl;
 
     // Alokacja tablic dynamicznych
-    long double* X   = new long double[N];
-    long double* U0  = new long double[N];
-    long double* Ue  = new long double[N];
-    long double* Ul  = new long double[N];
-    long double* Tmp = new long double[N];
+    long double* X   = new long double[N];  //  tablica przechowująca wartości węzłów siatki przestrzennej
+    long double* U0  = new long double[N];  //  tablica przechowująca wartości funkcji dla warunku początkowego
+    long double* Ue  = new long double[N];  //  tablica przechowująca wartości funkcji dla KMB
+    long double* Ul  = new long double[N];  //  tablica przechowująca wartości funkcji  dla pośr. metody Laasonen
+    long double* Tmp = new long double[N];  //  tablica przechowująca tymczasowe wartości funkcji
 
     // Utworzenie siatki przestrzennej jako: X[i] = -a + i*h
     for (unsigned long long i = 0; i < N; ++i) {
@@ -196,6 +175,7 @@ int main() {
     
     // Inicjalizacja warunku początkowego U(x,0)
     warunek_poczatkowy(U0, X);
+
     // Kopiujemy U0 do Ue oraz Ul
     for (unsigned long long i = 0ULL; i < N; ++i) {
         Ue[i] = U0[i];
@@ -205,6 +185,9 @@ int main() {
 
     //  definiujemy parametr lambda dla obu metod
     long double lambda = D * dt / (h * h);
+    //  Do obliczenia optymalnego lambda warto znać zależności: 
+    //  (w KMB bliskiego 0.4) 576M = 10N^2
+    //  Natomiast  w ML (dla lambda bliskiego 1): 144M = N^2
 
     // Pętla czasowa
     for (unsigned long long n = 0ULL; n < M; ++n) {
@@ -221,7 +204,7 @@ int main() {
     // Obliczenie błędów przy czasie t_max
     long double err_e = compute_max_error(Ue, X, t_max);
     long double err_l = compute_max_error(Ul, X, t_max);
-    std::cout << "Max error explicit = " << err_e << std::endl;
+    std::cout << "Max error KMB = " << err_e << std::endl;
     std::cout << "Max error laasonen = " << err_l << std::endl;
 
     // Zapis wyników do pliku CSV
