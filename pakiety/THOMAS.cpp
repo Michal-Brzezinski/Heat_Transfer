@@ -6,7 +6,7 @@ using namespace std;
 
 
 
-void thomaspack::thomas_procedure_1(int N, const long double l[], long double d[], const long double u[]) {
+void thomasldpack::thomas_procedure_1(int N, const long double l[], long double d[], const long double u[]) {
     //-------------------------------------------------------------------
     //  Procedura operująca na macierzy A (trójdiagonalnej).
     //  W rzeczwywistości operacyjnej mamy 3 oddzielne tablice l,d,u
@@ -30,7 +30,7 @@ void thomaspack::thomas_procedure_1(int N, const long double l[], long double d[
 
 
 
-void thomaspack::thomas_procedure_2(int N, const long double l[], const long double u[], 
+void thomasldpack::thomas_procedure_2(int N, const long double l[], const long double u[], 
         const long double d[], long double b[], long double x[]) {
     //-------------------------------------------------------------------
     // Procedura operująca na wektorze b.
@@ -67,7 +67,7 @@ void thomaspack::thomas_procedure_2(int N, const long double l[], const long dou
 
 
 
-void thomaspack::Thomas(int N, const long double l[], long double d[], const long double u[],
+void thomasldpack::Thomas(int N, const long double l[], long double d[], const long double u[],
         long double b[], long double x[]) {
     //-------------------------------------------------------------------
     // Główna funkcja rozwiązująca układ Ax = b dla macierzy trójdiagonalnej
@@ -85,6 +85,6 @@ void thomaspack::Thomas(int N, const long double l[], long double d[], const lon
     //  Zwraca: Nic -> operuje na wskaźnikach
     //-------------------------------------------------------------------
 
-    thomaspack::thomas_procedure_1(N, l, d, u);
-    thomaspack::thomas_procedure_2(N, l, u, d, b, x);
+    thomas_procedure_1(N, l, d, u);
+    thomas_procedure_2(N, l, u, d, b, x);
 }

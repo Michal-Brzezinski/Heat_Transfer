@@ -12,6 +12,15 @@
 *.cb2
 .*.lb
 
+# executable files
+*.exe
+*.out
+*.o
+*.obj
+*.lib
+*.exp
+*.def
+
 ## Intermediate documents:
 *.dvi
 *.xdv
