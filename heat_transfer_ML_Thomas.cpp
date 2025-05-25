@@ -17,7 +17,7 @@
 
 /*  
     Komenda do kompilacji kodu: 
-    g++ heat_transport_ML_Thomas.cpp pakiety/calerf.cpp pakiety/utils.cpp pakiety/thomas.cpp -o ML_Thomas -lstdc++
+    g++ heat_transfer_ML_Thomas.cpp pakiety/calerf.cpp pakiety/utils.cpp pakiety/thomas.cpp -o ML_Thomas -lstdc++
 
     Komenda wykonująca program:
     ./ML_Thomas

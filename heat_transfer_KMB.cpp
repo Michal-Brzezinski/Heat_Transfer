@@ -12,7 +12,7 @@
 
 /*  
     Komenda do kompilacji kodu: 
-    g++ heat_transport_KMB.cpp pakiety/calerf.cpp pakiety/utils.cpp -o KMB -lstdc++
+    g++ heat_transfer_KMB.cpp pakiety/calerf.cpp pakiety/utils.cpp -o KMB -lstdc++
 
     Komenda wykonująca program:
     ./KMB

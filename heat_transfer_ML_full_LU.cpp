@@ -18,7 +18,7 @@
 
 /*  
     Komenda do kompilacji kodu: 
-    g++ heat_transport_ML_full_LU.cpp pakiety/calerf.cpp pakiety/utils.cpp pakiety/lu.cpp -o ML_LU -lstdc++
+    g++ heat_transfer_ML_full_LU.cpp pakiety/calerf.cpp pakiety/utils.cpp pakiety/lu.cpp -o ML_LU -lstdc++
 
     Komenda wykonująca program:
     ./ML_LU
