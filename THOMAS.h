@@ -1,7 +1,7 @@
-#ifndef __thomasld_h
-#define __thomasld_h
+#ifndef __thomas_h
+#define __thomas_h
 
-namespace thomasldpack{
+namespace thomaspack{
 
     void thomas_procedure_1(int N, const long double l[], long double d[], const long double u[]);
     

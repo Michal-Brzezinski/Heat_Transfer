@@ -6,7 +6,8 @@
 
 //  Pakiet udostęniony przez prowadzącego
 #include "CALERF.h" 
-#include "ThomasLD.h"
+//  Pakiet dodatkowy (stworzony na zajęciach laboratoryjnych)
+#include "THOMAS.h"
 
 
 /*  
