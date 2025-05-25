@@ -162,7 +162,7 @@ void oblicz_nastepny_poziom_czasowy_Laasonen(const long double* U_old, long doub
     
     // Rozwiązujemy układ trójdiagonalny wykorzystując pakiet thomasldpack:
     // Parametry: N, l, d, u, b (c), x (U_new)
-    thomasldpack::Thomas(N, l, d, u, c, U_new);
+    thomaspack::Thomas(N, l, d, u, c, U_new);
     
     delete[] l;
     delete[] d;
