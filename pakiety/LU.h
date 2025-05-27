@@ -1,7 +1,7 @@
 #ifndef __lu_h
 #define __lu_h
 
-namespace ludecomposepack{
+namespace lupack{
 
     void swap(int* a, int* b);
     void LU_decompose(long double A[], int index[], int n);

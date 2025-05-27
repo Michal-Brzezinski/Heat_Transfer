@@ -3,7 +3,7 @@
 #include "iostream"
 
 
-#include "calerf.h"
+#include "CALERF.h"
 
 using namespace std;
 
@@ -223,7 +223,7 @@ static const long double Q[5] = {
                                 };
 //-----------------------------------------------------------------
 
-register int i;
+int i;  //  register int i; -> podkreślało jako błąd, ze względu na przestarzały koncept słowa register
 long double del,x,xden,xnum,y,ysq;
 long double result;
 

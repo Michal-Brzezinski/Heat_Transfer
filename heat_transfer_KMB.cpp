@@ -3,6 +3,8 @@
 #include <chrono>
 #include <fstream>
 #include <utility> // dla std::swap
+#include <set>  // dla zapisywania w csv (sprawdzania indeksów)
+#include <string>
 
 //  Pakiet udostęniony przez prowadzącego
 #include "pakiety/CALERF.h" 
@@ -11,14 +13,42 @@
 #include "pakiety/UTILS.h"
 
 /*  
-    Komenda do kompilacji kodu: 
-    g++ heat_transfer_KMB.cpp pakiety/calerf.cpp pakiety/utils.cpp -o KMB -lstdc++
+            Komenda do kompilacji kodu: 
+            g++ heat_transfer_KMB.cpp pakiety/calerf.cpp pakiety/utils.cpp -o KMB -lstdc++
 
-    Komenda wykonująca program:
-    ./KMB
+            Komenda wykonująca program:
+            ./KMB
 */
 
-void oblicz_nastepny_poziom_czasowy_KMB(const long double* U_old, long double* U_new, long double lambda) {
+//___________________________________________________________________________________________________
+//  WSTĘPNA KONFIGURACJA DLA PUNKTÓW 2 I 3
+//  ODKOMENTOWAĆ DLA WYKONANIA PKT 2 I 3 :
+#define POINT_2_AND_3
+
+#ifdef POINT_2_AND_3
+        //----------------------------------------------------------------------
+        // Rozmiary siatki
+        //----------------------------------------------------------------------
+
+        //  liczba węzłów siatki przestrzennej
+        int Xs = 240;  //  np.: 240 -> KMB, 380 -> ML
+
+        //  liczba węzłów siatki czasowej 
+        int Ts = 1000; //  np. 1000 -> KMB, ML 
+
+        //----------------------------------------------------------------------
+        // Wartości kroków na siatce czasowo-przestrzennej
+        //----------------------------------------------------------------------
+        long double h  = static_cast<long double>((2.0L*a)/(Xs-1));     // krok przestrzenny
+        long double dt = static_cast<long double>(t_max/(Ts-1));     // krok czasowy (krok całkowania)
+#endif
+//____________________________________________________________________________________________________
+
+
+
+
+
+void oblicz_nastepny_poziom_czasowy_KMB(const long double* U_old, long double* U_new, long double lambda, const int N) {
     //-------------------------------------------------------------------
     // Funkcja oblicza przybliżoną wartość funkcji na kolejnym poziomie czasowym
     // Warunki brzegowe: U_new[0]=U_new[N-1]=0 (przyjmujemy, że już są ustawione)
@@ -27,6 +57,7 @@ void oblicz_nastepny_poziom_czasowy_KMB(const long double* U_old, long double* U
     //  U_old - Tablica wartości funkcji dla bieżącego poziomu czasu
     //  U_new - Tablica wartości funkcji dla nowego poziomu czasu
     //  lambda - parametr lambda: D*dt/h^2
+    //  N - liczba węzłów siatki przestrzennej
 
     //  Zwraca: Nic -> operacje na wskaźnikach
     //-------------------------------------------------------------------
@@ -43,20 +74,36 @@ void oblicz_nastepny_poziom_czasowy_KMB(const long double* U_old, long double* U
 
 }
 
+
+#ifndef POINT_2_AND_3
+
+#endif
+
+
+
+#ifdef POINT_2_AND_3
+
 int main() {
 
     // Alokacja tablic dynamicznych
-    long double* X   = new long double[N];  //  tablica przechowująca wartości węzłów siatki przestrzennej
-    long double* U  = new long double[N];  //  tablica przechowująca wartości funkcji dla KMB
-    long double* Tmp = new long double[N];  //  tablica przechowująca tymczasowe wartości funkcji
+    long double* T   = new long double[Ts];  //  tablica przechowująca wartości węzłów siatki czasowej
+    long double* X   = new long double[Xs];  //  tablica przechowująca wartości węzłów siatki przestrzennej
+    long double* U  = new long double[Xs];  //  tablica przechowująca wartości funkcji dla KMB
+    long double* Tmp = new long double[Xs];  //  tablica przechowująca tymczasowe wartości funkcji
+    int i = 0; //  zmienna iteracyjna, aby nie definiować ciągle nowej
 
     // Utworzenie siatki przestrzennej jako: X[i] = -a + i*h
-    for (int i = 0; i < N; ++i) {
+    for (i = 0; i < Xs; ++i) {
         X[i] = -a + static_cast<long double>(i) * h;
+    }
+
+    // Utworzenie siatki czasowej jako: T[i] = i*dt
+    for (i = 0; i < Ts; ++i) {
+        T[i] = static_cast<long double>(i) * dt;
     }
     
     // Inicjalizacja warunku początkowego U(x,0)
-    utilspack::warunek_poczatkowy(U, X);
+    utilspack::warunek_poczatkowy(U, X, Xs);
 
     //  definiujemy parametr lambda dla obu metod
     long double lambda = D * dt / (h * h);
@@ -65,35 +112,57 @@ int main() {
     //  Przykładem są wartości: M=1000, N=240
 
     // Wypisanie wymiarów siatki i lambdy
-    std::cout << "N = " << N << ", M = " << M << ", lambda = " << lambda << std::endl;
+    std::cout << "węzłów przestrzennych: " << Xs << ", węzłów czasowych: " << Ts << ", lambda = " << lambda << std::endl;
+
+
+    std::set<int> save_indexes= {0, 1, 10, 30, 80, Ts-1};
+    //  Tablica do przechowywania indeksów iteracji, w których zapisywane są wyniki
+
+    
+    // otwarcie pliku przed rozpoczęciem petli, aby nie nadpisywać pliku
+    std::ofstream file_errr_time("wyniki/KMB_maxerror_vs_time.csv");
+    file_errr_time << "t,e_max\n";
+    long double err_kmb;
+    // te instrukcje przed pętlą aby uniknąc redundancji danych w kodzie
 
     // Pętla czasowa
-    for (int n = 0; n < M; ++n) {
+    for (int n = 0; n < Ts; n++) {
         // Metoda KMB
-        oblicz_nastepny_poziom_czasowy_KMB(U, Tmp, lambda);
+        std::string template_filename = "wyniki/KMBresults";
+        if(save_indexes.count(n)){
+            // Jeśli podany indeks jest jednym z wybranych do zapisu to zapisz do pliku CSV:
+
+            //-------------------------- ZAPIS DO PLIKU CSV -------------------------------------
+            std::ofstream fout(template_filename + std::to_string(n) + "iter.csv");   // np. KMBresults0.csv
+            
+            fout << "x,U_KMB,U_exact\n";
+            for (i = 0; i < Xs; i++) {
+                
+                long double u_exact = utilspack::rozwiazanie_analityczne(X[i], T[n], Xs);
+                fout << X[i] << "," << U[i] <<  "," << u_exact << "\n";
+            }
+            fout.close();
+            //------------------------------------------------------------------------------------
+        }
+        
+        //----------------- ZAPISANIE KROKU CAŁKOWANIA I BŁĘDU DO PLIKU CSV ------------------
+        err_kmb = utilspack::compute_max_error(U, X, T[n], Xs);
+        file_errr_time << T[n] << "," << err_kmb <<"\n";
+        //------------------------------------------------------------------------------------
+
+        oblicz_nastepny_poziom_czasowy_KMB(U, Tmp, lambda, Xs);
         // Zamiana wskaźników, aby uniknąć kopiowania tablic – teraz Ue wskazuje na wynik nowej iteracji
         std::swap(U, Tmp);
 
     }
-
-    // Obliczenie błędów przy czasie t_max
-    long double err_kmb = utilspack::compute_max_error(U, X, t_max);
-    std::cout << "Max error KMB = " << err_kmb << std::endl;
-
-    // Zapis wyników do pliku CSV
-    std::ofstream fout("KMBresults.csv");
-    fout << "x,U_explicit,U_exact\n";
-    for (int i = 0; i < N; ++i) {
-        
-        long double u_exact = utilspack::rozwiazanie_analityczne(X[i], t_max);
-        fout << X[i] << "," << U[i] <<  "," << u_exact << "\n";
-    }
-    fout.close();
+    file_errr_time.close();
 
     // Dealokacja pamięci
+    delete[] T;
     delete[] X;
     delete[] U;
     delete[] Tmp;
 
     return 0;
 }
+#endif
