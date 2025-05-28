@@ -114,7 +114,7 @@ void lupack::LU_decompose(long double A[], int index[], int N){
 
 void lupack::LU_solve(long double A[], int index[], long double b[], int N) {
 //---------------------------------------------------------------------
-//  Funkcja rozwiązująca układ równań A*x = b, wykorzystując wcześniej
+//  Funkcja rozwiązująca układ równań Ax = b, wykorzystując wcześniej
 //  wykonaną dekompozycję LU, przy czym wszystkie operacje odbywają się
 //  na "wirtualnych" wierszach określonych przez tablicę index.
 //  Proces dzieli się na dwa etapy:
@@ -138,34 +138,69 @@ void lupack::LU_solve(long double A[], int index[], long double b[], int N) {
 //---------------------------------------------------------------------
     
     
-    // 1. Forward substitution: L * y = P*b
-    for (int i = 0; i < N; i++) {
-        long double sum = b[index[i]];
+// 1. Forward substitution: L * y = P*b
+// Ten fragment kodu rozwiązuje układ równań L*y = P*b. 
+// Tutaj L jest macierzą dolnotrójkątną z jedynkami na przekątnej (nie zapisujemy jej elementów, 
+// gdyż przekątna jest domyślnie równa 1), a P*b oznacza wektor b przestawiony zgodnie z
+// permutacjami ustalonymi podczas dekompozycji LU. Wektor 'index' przechowuje numery 
+// wierszy odpowiadające nowej kolejności, dzięki czemu mamy dostęp do prawidłowych wierszy macierzy i wektora.
+for (int i = 0; i < N; i++) {
+    // Inicjujemy zmienną 'sum' wartością elementu b odpowiadającą bieżącemu równaniu, 
+    // już przestawionego przez pivoting (indeksowanym przez index[i]).
+    long double sum = b[index[i]];
 
-        // Odejmujemy wpływ poprzednich elementów (L jest jednostkowa na przekątnej, 
-        // a mnożniki są zapisane w A w pozycji: A[index[i] * N + j])
-        for (int j = 0; j < i; j++) {
-            sum -= A[index[i] * N + j] * b[index[j]];
-        }
-
-        // Wynik forward eliminacji zapisujemy z powrotem w wektorze b
-        b[index[i]] = sum;
+    // Odejmujemy wpływ poprzednich elementów (L jest jednostkowa na przekątnej, 
+    // a mnożniki są zapisane w A w pozycji: A[index[i] * N + j])
+    // Następnie dla każdego wcześniejszego równania (dla j od 0 do i-1)
+    // odejmujemy iloczyn odpowiadającego współczynnika z macierzy L oraz już wyznaczonej 
+    // niewiadomej y (przechowywanej w b[index[j]]).
+    // Dzięki temu eliminujemy wpływ wcześniej obliczonych wartości na bieżące równanie, 
+    // uzyskując w efekcie wartość y dla wiersza index[i].
+    for (int j = 0; j < i; j++) {
+        sum -= A[index[i] * N + j] * b[index[j]];
     }
 
+    // Wynik forward eliminacji zapisujemy z powrotem w wektorze b
+    // Przypisanie sum do b[index[i]] oznacza, że obliczone rozwiązanie 
+    // dla y danego równania zastępuje oryginalną wartość z wektora b.
+    // W kolejnych operacjach b będzie już zawierało elementy y.
+    b[index[i]] = sum;
+}
 
-    // 2. Backward substitution: U * x = y
-    // Przechodzimy od ostatniego wirtualnego wiersza do pierwszego
-    for (int i = N - 1; i >= 0; i--) {
-        long double sum = b[index[i]];
 
-        for (int j = i + 1; j < N; j++) {
-            sum -= A[index[i] * N + j] * b[index[j]];
-        }
+// 2. Backward substitution: U * x = y
+// Przechodzimy od ostatniego wirtualnego wiersza do pierwszego
+// Ten fragment kodu rozwiązuje układ równań U*x = y, gdzie U jest macierzą górnotrójkątną 
+// uzyskaną z dekompozycji LU. Algorytm zaczyna od ostatniego równania (które zawiera tylko jedno niewiadome)
+// i idzie "w górę", eliminując wpływ już wyznaczonych zmiennych, aby uzyskać ostateczne wartości x.
+// Wektor 'index' jest ponownie używany, by odzwierciedlić kolejność wierszy.
+for (int i = N - 1; i >= 0; i--) {
+    // Inicjujemy zmienną 'sum' wartością odpowiadającą elementowi y, który wcześniej zapisaliśmy 
+    // w wektorze b w wyniku forward substitution.
+    long double sum = b[index[i]];
 
-        // Uzyskujemy dzieląc przez przekątny element macierzy U (przechowywany w A)
-        sum /= A[index[i] * N + i];
-        b[index[i]] = sum;
+    // Iterujemy po kolumnach dla każdego równania (od i+1 do N-1), 
+    // czyli po elementach macierzy U należących do prawej strony przekątnej.
+    // Odejmujemy iloczyn współczynnika U z wcześniej obliczoną 
+    // niewiadomą x (przechowywaną w b[index[j]]) od skumulowanej sumy.
+    // W ten sposób eliminujemy znane już składniki, pozostawiając tylko wyraz związany z x[i].
+    for (int j = i + 1; j < N; j++) {
+        sum -= A[index[i] * N + j] * b[index[j]];
     }
+
+    // Uzyskujemy dzieląc przez przekątny element macierzy U (przechowywany w A)
+    // Każde równanie układu U*x = y ma postać:
+    // A[index[i]*N + i] * x[index[i]] + (suma iloczynów z już znanymi x) = y[index[i]]
+    // Dlatego po wyeliminowaniu pozostałych składników dzielimy skorygowaną 
+    // sum przez element diagonalny, aby uzyskać wartość x dla bieżącego równania.
+    sum /= A[index[i] * N + i];
+    
+    // Wynik rozwiązania dla x zapisujemy z powrotem w wektorze b, 
+    // nadpisując tym samym wcześniej obliczone y. W efekcie, po zakończeniu pętli,
+    // wektor b zawiera ostateczne rozwiązanie układu równań A*x = b.
+    b[index[i]] = sum;
+}
+
 
 }
 

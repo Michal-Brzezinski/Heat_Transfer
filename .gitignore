@@ -136,11 +136,11 @@ acs-*.bib
 # *.ist
 
 # gnuplot
-*.gnuplot
+#*.gnuplot
 *.table
 
 # gnuplottex
-*-gnuplottex-*
+#*-gnuplottex-*
 
 # gregoriotex
 *.gaux

@@ -24,7 +24,7 @@ set size ratio -1
 set terminal qt size 600,600
 
 # Wykres: U_KMB jako punkty, U_exact jako linia; używamy różnych kolorów
-plot "ML_Thomas_results1000iter.csv" using 1:2 with points pointtype 7 linecolor rgb "red" title "U_{KMB}", \
-     "ML_Thomas_results1000iter.csv" using 1:3 with lines linewidth 2 linecolor rgb "blue" title "U_{exact}"
+plot "ML_Thomas_results39038iter.csv" using 1:2 with points pointtype 7 linecolor rgb "red" title "U_{KMB}", \
+     "ML_Thomas_results39038iter.csv" using 1:3 with lines linewidth 2 linecolor rgb "blue" title "U_{exact}"
 
 pause -1 "Nacisnij dowolny klawisz, aby zakonczyc"

@@ -6,6 +6,8 @@
 #include <string>
 #include "string.h" //do memset
 #include <set>
+#include <iomanip>
+#include "math.h"
 
 //  Pakiet udostęniony przez prowadzącego
 #include "pakiety/CALERF.h" 
@@ -26,12 +28,18 @@
     ./ML_LU
 */
 
+
+//______________________________________________________
+//------------------------------------------------------
+// #define POINT_1 // ZAKOMENTOWAĆ DLA WYKONANIA PKT 2 I 3 
+//------------------------------------------------------
+//______________________________________________________
+
+
 //___________________________________________________________________________________________________
 //  WSTĘPNA KONFIGURACJA DLA PUNKTÓW 2 I 3
-//  ODKOMENTOWAĆ DLA WYKONANIA PKT 2 I 3 :
-#define POINT_2_AND_3
-
-#ifdef POINT_2_AND_3
+//  
+#ifndef POINT_1
         //----------------------------------------------------------------------
         // Rozmiary siatki
         //----------------------------------------------------------------------
@@ -115,9 +123,70 @@ void oblicz_nastepny_poziom_czasowy_Laasonen_LU(const long double* U_old,
 }
 
 
-#ifdef POINT_2_AND_3
+#ifdef POINT_1
+int main() {
+    int Xs, Ts;  // zmienne przechowujące ilość węzłów
+    long double h, dt;  // kroki
+
+    std::ofstream fout("wyniki/ML_full_LU/ML_full_LU_results_error_step.csv");
+    fout << "log10(h),log10(max_error)\n";
+    fout << std::fixed << std::setprecision(19);
+
+    for (int k = 1; k <= 15; ++k) {
+        Xs = 24 * k;          // N jako wielokrotność 24
+        Ts = 10 * k * k;       // M z zależności 576M = 10N^2
+
+        // Używamy std::vector do alokacji pamięci
+        
+        long double* X   = new long double[Xs];  //  tablica przechowująca wartości węzłów siatki przestrzennej
+        long double* U  = new long double[Xs];  //  tablica przechowująca wartości funkcji dla KMB
+        long double* Tmp = new long double[Xs];  //  tablica przechowująca tymczasowe wartości funkcji
+
+        h = (2.0L * a) / (Xs - 1);      // krok przestrzenny
+        dt = t_max / (Ts - 1);          // krok czasowy (krok całkowania)
+
+        // Utworzenie siatki przestrzennej: X[i] = -a + i*h
+        for (int i = 0; i < Xs; ++i) {
+            X[i] = -a + static_cast<long double>(i) * h;
+        }
+
+        // Inicjalizacja warunku początkowego U(x,0)
+        utilspack::warunek_poczatkowy(U, X, Xs);
+
+        // Parametr lambda dla metody
+        long double lambda = D * dt / (h * h);
+
+        // Wypisanie wymiarów siatki i lambdy
+        std::cout << "węzłów przestrzennych: " << Xs << ", węzłów czasowych: " << Ts << ", lambda = " << lambda << std::endl;
+
+        // Pętla czasowa (Ms-1 kroków)
+        for (int n = 0; n < Ts - 1; ++n) {
+            oblicz_nastepny_poziom_czasowy_Laasonen_LU(U, Tmp, lambda, Xs);
+            std::swap(U, Tmp);
+}
+
+        // Obliczenie błędu przy czasie t_max
+        long double err_kmb = utilspack::compute_max_error(U, X, t_max, Xs);
+        std::cout << "Max error Laasonen full LU = " << err_kmb << std::endl;
+        fout << log10l(h) << "," << log10l(err_kmb) << "\n";
+
+        delete[] X;
+        delete[] U;
+        delete[] Tmp;
+
+    }
+
+    fout.close();
+    
+    return 0;
+}
+#endif
+
+#ifndef POINT_1
 
 int main() {
+
+    auto start = std::chrono::high_resolution_clock::now(); // Zapisujemy czas rozpoczęcia
 
     // Alokacja tablic dynamicznych
     long double* T   = new long double[Ts];  //  tablica przechowująca wartości węzłów siatki czasowej
@@ -147,7 +216,7 @@ int main() {
     std::cout << "węzłów przestrzennych: " << Xs << ", węzłów czasowych: " << Ts << ", lambda = " << lambda << std::endl;
 
 
-    std::set<int> save_indexes= {0, 1, 10, 30, 80, 1000, 5000, 10000, Ts-1};
+    std::set<int> save_indexes= {0, 1, 10, 30, 80, 100, 200, 300, Ts-1};
     //  Tablica do przechowywania indeksów iteracji, w których zapisywane są wyniki
 
     
@@ -194,6 +263,11 @@ int main() {
     delete[] X;
     delete[] U;
     delete[] Tmp;
+
+
+    auto end = std::chrono::high_resolution_clock::now(); // Zapisujemy czas zakończenia
+    std::chrono::duration<double> duration = end - start; // Obliczamy różnicę czasu
+    std::cout << "Czas wykonania: " << duration.count() << " sekund\n";
 
     return 0;
 }
