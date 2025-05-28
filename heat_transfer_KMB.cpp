@@ -14,7 +14,7 @@
 
 /*  
             Komenda do kompilacji kodu: 
-            g++ heat_transfer_KMB.cpp pakiety/calerf.cpp pakiety/utils.cpp -o KMB -lstdc++
+            g++ heat_transfer_KMB.cpp pakiety/CALERF.cpp pakiety/UTILS.cpp -o KMB
 
             Komenda wykonująca program:
             ./KMB
@@ -31,10 +31,10 @@
         //----------------------------------------------------------------------
 
         //  liczba węzłów siatki przestrzennej
-        int Xs = 240;  //  np.: 240 -> KMB, 380 -> ML
+        int Xs = 1500;  //  np.: 240 -> KMB, 380 -> ML
 
         //  liczba węzłów siatki czasowej 
-        int Ts = 1000; //  np. 1000 -> KMB, ML 
+        int Ts = 39063; //  np. 1000 -> KMB, ML 
 
         //----------------------------------------------------------------------
         // Wartości kroków na siatce czasowo-przestrzennej
@@ -108,19 +108,19 @@ int main() {
     //  definiujemy parametr lambda dla obu metod
     long double lambda = D * dt / (h * h);
     //  Do obliczenia optymalnego lambda warto znać zależności: 
-    //  (w KMB bliskiego 0.4) 576M = 10N^2 
-    //  Przykładem są wartości: M=1000, N=240
+    //  (w KMB bliskiego 0.4) 576Ts = 10Xs^2 
+    //  Przykładem są wartości: Ts=1000, Xs=240
 
     // Wypisanie wymiarów siatki i lambdy
     std::cout << "węzłów przestrzennych: " << Xs << ", węzłów czasowych: " << Ts << ", lambda = " << lambda << std::endl;
 
 
-    std::set<int> save_indexes= {0, 1, 10, 30, 80, Ts-1};
+    std::set<int> save_indexes= {0, 1, 10, 30, 80, 1000, 5000, 10000, Ts-1};
     //  Tablica do przechowywania indeksów iteracji, w których zapisywane są wyniki
 
     
     // otwarcie pliku przed rozpoczęciem petli, aby nie nadpisywać pliku
-    std::ofstream file_errr_time("wyniki/KMB_maxerror_vs_time.csv");
+    std::ofstream file_errr_time("wyniki/KMB/KMB_maxerror_vs_time.csv");
     file_errr_time << "t,e_max\n";
     long double err_kmb;
     // te instrukcje przed pętlą aby uniknąc redundancji danych w kodzie
@@ -128,7 +128,7 @@ int main() {
     // Pętla czasowa
     for (int n = 0; n < Ts; n++) {
         // Metoda KMB
-        std::string template_filename = "wyniki/KMBresults";
+        std::string template_filename = "wyniki/KMB/KMBresults";
         if(save_indexes.count(n)){
             // Jeśli podany indeks jest jednym z wybranych do zapisu to zapisz do pliku CSV:
 

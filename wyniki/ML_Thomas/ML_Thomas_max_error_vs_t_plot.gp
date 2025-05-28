@@ -1,5 +1,5 @@
 #   Wywołanie: 
-#   gnuplot "KMB_max_error_vs_t_plot.gp"
+#   gnuplot "ML_Thomas_max_error_vs_t_plot.gp"
 
 
 
@@ -12,7 +12,7 @@ set key autotitle columnhead
 # Ustawienia osi i tytułu
 set xlabel "t"
 set ylabel "error_{max}"
-set title "Zależność error_{max} od t"
+set title "Zaleznosc error_{max} od t"
 
 # zakresy osi
 #set xrange [-1:1]
@@ -30,6 +30,6 @@ set terminal qt size 600,600
 
 
 # Rysujemy dane zapisane w pliku
-plot "KMB_maxerror_vs_time.csv" using 1:2 with linespoints lw 2 pt 7 title "Dośw. rząd dokładności"
+plot "ML_Thomas_maxerror_vs_time.csv" using 1:2 with linespoints lw 2 pt 7 title "Doswiadczalny rzad dokladnosci"
 
-pause -1 "Naciśnij dowolny klawisz, aby zakończyć"
+pause -1 "Nacisnij dowolny klawisz, aby zakonczyc"
